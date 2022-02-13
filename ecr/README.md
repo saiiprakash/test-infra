@@ -1,0 +1,1 @@
+This is the folder to create the ECR repository which we will using to store the docker image
