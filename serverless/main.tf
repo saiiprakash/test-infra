@@ -17,6 +17,17 @@ resource "aws_iam_role" "iam_for_lambda" {
 EOF
 }
 
+resource "aws_iam_policy_attachment" "dynamo-attach" {
+  name       = "dynamodb-attachment"
+  roles      = [aws_iam_role.iam_for_lambda.name]
+  policy_arn = "arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess"
+}
+
+resource "aws_iam_policy_attachment" "s3-attach" {
+  name       = "dynamodb-attachment"
+  roles      = [aws_iam_role.iam_for_lambda.name]
+  policy_arn = "arn:aws:iam::aws:policy/AmazonS3FullAccess"
+}
 resource "aws_lambda_permission" "allow_bucket" {
   statement_id  = "AllowExecutionFromS3Bucket"
   action        = "lambda:InvokeFunction"
@@ -26,11 +37,18 @@ resource "aws_lambda_permission" "allow_bucket" {
 }
 
 resource "aws_lambda_function" "func" {
-  filename      = "your-function.zip"
-  function_name = "example_lambda_name"
+  filename      = "your-functio.zip"
+  function_name = "s3todynamodb"
   role          = aws_iam_role.iam_for_lambda.arn
-  handler       = "exports.example"
-  runtime       = "go1.x"
+  handler       = "main.lambda_handler"
+  runtime       = "python3.8"
+  environment {
+    variables = {
+      bucket = "serverless-csvapp-bucket"
+      key = "testfile.csv"
+      table = "csvdetail"
+    }
+  }
 }
 
 resource "aws_s3_bucket" "bucket" {
@@ -54,9 +72,9 @@ resource "aws_s3_bucket_notification" "bucket_notification" {
 resource "aws_dynamodb_table" "my_first_table" {
   name        = "csvdetail"
   billing_mode = "PAY_PER_REQUEST"
-  hash_key       = "employee-id"
+  hash_key       = "uuid"
   attribute {
-    name = "employee-id"
+    name = "uuid"
     type = "S"
   }
    tags = {
